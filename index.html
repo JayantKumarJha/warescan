@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>WareScan — Barcode Verifier</title>
 
-  <!-- SheetJS for Excel read/write -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- html5-qrcode: well-maintained, works on iOS + Android, correct API -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
@@ -30,219 +28,116 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'Barlow', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
       overflow-x: hidden;
     }
 
     body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 40px 40px;
-      opacity: 0.4;
-      pointer-events: none;
-      z-index: 0;
+      content: ''; position: fixed; inset: 0;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px; opacity: 0.4; pointer-events: none; z-index: 0;
     }
 
-    header {
-      width: 100%; max-width: 540px;
-      padding: 32px 24px 16px;
-      position: relative; z-index: 1;
-    }
+    header { width: 100%; max-width: 540px; padding: 32px 24px 16px; position: relative; z-index: 1; }
 
-    .logo {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 900; font-size: 2.4rem;
-      letter-spacing: -1px; color: var(--text);
-    }
+    .logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 2.4rem; letter-spacing: -1px; color: var(--text); }
     .logo span { color: var(--accent); }
-
-    .tagline {
-      font-size: 0.78rem; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--muted); margin-top: 2px;
-    }
+    .tagline { font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 
     .pill-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
-
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 11px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 99px;
-      font-size: 0.73rem; color: var(--muted);
-    }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; font-size: 0.73rem; color: var(--muted); }
     .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
     .pill.loaded .dot { background: var(--green); }
     .pill.loaded { color: var(--text); }
     .pill-accent { background: rgba(240,180,41,0.08); border-color: rgba(240,180,41,0.2); color: var(--accent); }
 
-    main {
-      width: 100%; max-width: 540px;
-      padding: 0 16px 48px;
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column; gap: 12px;
-    }
+    main { width: 100%; max-width: 540px; padding: 0 16px 48px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; }
 
-    .btn {
-      width: 100%; padding: 17px 24px; border: none; border-radius: 6px;
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-      font-size: 1.08rem; letter-spacing: 0.1em; text-transform: uppercase;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      gap: 10px; transition: all 0.15s ease;
-    }
+    .btn { width: 100%; padding: 17px 24px; border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.08rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.15s ease; }
     .btn:active { transform: scale(0.98); }
-
     .btn-upload { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-upload:hover { border-color: var(--accent); color: var(--accent); }
-
     .btn-clear { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-clear:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
     .btn-clear:disabled { opacity: 0.35; cursor: not-allowed; }
-
     .btn-scan { background: var(--accent); color: #000; border: 1px solid var(--accent); font-size: 1.2rem; padding: 21px 24px; }
     .btn-scan:hover:not(:disabled) { background: #f5c842; }
     .btn-scan:disabled { background: var(--surface2); color: var(--muted); border-color: var(--border); cursor: not-allowed; }
     .btn-scan.scanning { background: var(--accent2); border-color: var(--accent2); color: #fff; }
-
     .btn-export { background: transparent; color: var(--blue); border: 1px solid rgba(59,130,246,0.35); }
     .btn-export:hover:not(:disabled) { background: rgba(59,130,246,0.08); border-color: var(--blue); }
     .btn-export:disabled { opacity: 0.3; cursor: not-allowed; }
 
     #fileInput { display: none; }
 
-    .divider {
-      display: flex; align-items: center; gap: 12px;
-      color: var(--muted); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
-    }
+    .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+    /* ── DB PREVIEW PANEL ── */
+    .db-preview {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .db-preview-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .db-preview-title { font-family: 'Barlow Condensed', sans-serif; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .db-preview-title .count-badge { background: rgba(240,180,41,0.15); color: var(--accent); padding: 2px 8px; border-radius: 99px; font-size: 0.72rem; }
+    .db-preview-toggle { font-size: 0.72rem; color: var(--muted); }
+    .db-preview-body { display: none; padding: 10px 14px; }
+    .db-preview-body.open { display: block; }
+    .db-codes { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; }
+    .db-code-chip {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 0.78rem; letter-spacing: 0.03em;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 8px; color: var(--text);
+    }
+    .db-note { font-size: 0.72rem; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
     /* ── SCANNER PANEL ── */
-    #scannerPanel {
-      display: none; flex-direction: column;
-      border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
-    }
+    #scannerPanel { display: none; flex-direction: column; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 
-    /*
-      html5-qrcode renders its own video + overlay inside #reader.
-      We override its default styles to match our dark theme.
-    */
-    #reader {
-      width: 100% !important;
-      border: none !important;
-      background: #000;
-    }
+    #reader { width: 100% !important; border: none !important; background: #000; }
+    #reader__dashboard_section_swaplink, #reader__dashboard_section_filesel,
+    #reader__filescan_input, #reader__status_span, #reader__header_message,
+    #html5-qrcode-button-camera-stop, #html5-qrcode-button-camera-start,
+    #html5-qrcode-select-camera, #reader__dashboard { display: none !important; }
+    #reader video { width: 100% !important; object-fit: cover !important; border-radius: 0 !important; }
 
-    /* hide the default html5-qrcode "Scan an image file" UI */
-    #reader__dashboard_section_swaplink,
-    #reader__dashboard_section_filesel,
-    #reader__filescan_input,
-    #reader__status_span,
-    #reader__header_message,
-    #html5-qrcode-button-camera-stop,
-    #html5-qrcode-button-camera-start,
-    #html5-qrcode-select-camera,
-    #reader__dashboard { display: none !important; }
-
-    /* make the scanner fill a square */
-    #reader video {
-      width: 100% !important;
-      object-fit: cover !important;
-      border-radius: 0 !important;
-    }
-
-    /* scan frame overlay we draw ourselves */
-    .scan-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background: #000;
-      overflow: hidden;
-    }
-
-    .scan-frame-overlay {
-      position: absolute; inset: 0; pointer-events: none;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .scan-corners {
-      width: 58%; aspect-ratio: 1; position: relative;
-    }
-    .scan-corners::before, .scan-corners::after,
-    .scan-corners > span::before, .scan-corners > span::after {
-      content: ''; position: absolute;
-      width: 22px; height: 22px;
-      border-color: var(--accent); border-style: solid;
-    }
+    .scan-wrap { position: relative; width: 100%; aspect-ratio: 1/1; background: #000; overflow: hidden; }
+    .scan-frame-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+    .scan-corners { width: 58%; aspect-ratio: 1; position: relative; }
+    .scan-corners::before, .scan-corners::after, .scan-corners > span::before, .scan-corners > span::after { content: ''; position: absolute; width: 22px; height: 22px; border-color: var(--accent); border-style: solid; }
     .scan-corners::before  { top:0; left:0;  border-width: 3px 0 0 3px; }
     .scan-corners::after   { top:0; right:0; border-width: 3px 3px 0 0; }
     .scan-corners > span::before { bottom:0; left:0;  border-width: 0 0 3px 3px; }
     .scan-corners > span::after  { bottom:0; right:0; border-width: 0 3px 3px 0; }
-
-    .scan-line {
-      position: absolute; left: 5%; right: 5%; height: 2px;
-      background: rgba(240,180,41,0.7);
-      box-shadow: 0 0 10px rgba(240,180,41,0.6);
-      animation: scanMove 2s ease-in-out infinite; top: 5%;
-    }
+    .scan-line { position: absolute; left: 5%; right: 5%; height: 2px; background: rgba(240,180,41,0.7); box-shadow: 0 0 10px rgba(240,180,41,0.6); animation: scanMove 2s ease-in-out infinite; top: 5%; }
     @keyframes scanMove { 0%,100%{top:5%} 50%{top:90%} }
 
-    /* camera loading spinner */
-    #cameraLoading {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.85);
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px;
-      color: var(--text); font-size: 0.85rem;
-      z-index: 10;
-    }
+    #cameraLoading { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--text); font-size: 0.85rem; z-index: 10; }
     #cameraLoading.hidden { display: none; }
-    .spinner {
-      width: 32px; height: 32px;
-      border: 3px solid var(--border); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-    }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── RESULT PANEL ── */
-    .result-panel {
-      padding: 20px; background: var(--surface);
-      display: flex; align-items: center; gap: 14px; min-height: 82px;
-    }
-    .result-icon {
-      width: 46px; height: 46px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: all 0.2s;
-    }
+    .result-panel { padding: 20px; background: var(--surface); display: flex; align-items: center; gap: 14px; min-height: 82px; }
+    .result-icon { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
     .result-icon.accept { background: rgba(34,197,94,0.15); color: var(--green); }
     .result-icon.reject { background: rgba(239,68,68,0.15);  color: var(--red); }
     .result-icon.idle   { background: var(--surface2);        color: var(--muted); }
-
-    .result-label {
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-      font-size: 1.15rem; letter-spacing: 0.05em; text-transform: uppercase;
-    }
+    .result-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.05em; text-transform: uppercase; }
     .result-label.accept { color: var(--green); }
     .result-label.reject { color: var(--red); }
     .result-label.idle   { color: var(--muted); }
-
-    .result-barcode {
-      font-size: 0.82rem; color: var(--muted); margin-top: 3px;
-      font-family: 'Barlow Condensed', sans-serif;
-      letter-spacing: 0.04em; word-break: break-all;
-    }
+    .result-barcode { font-size: 0.82rem; color: var(--muted); margin-top: 3px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.04em; word-break: break-all; }
 
     @keyframes pulse-accept { 0%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 70%{box-shadow:0 0 0 18px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
     @keyframes pulse-reject { 0%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)}  70%{box-shadow:0 0 0 18px rgba(239,68,68,0)}  100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} }
     .result-panel.flash-accept { animation: pulse-accept 0.6s ease-out; }
     .result-panel.flash-reject { animation: pulse-reject 0.6s ease-out; }
 
-    /* ── STATS ── */
     .stats-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
     .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 10px; text-align: center; }
     .stat-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.8rem; line-height: 1; }
@@ -251,7 +146,6 @@
     .stat-num.reject { color: var(--red); }
     .stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 5px; }
 
-    /* ── HISTORY ── */
     #historySection { display: none; }
     #historySection.visible { display: block; }
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -267,44 +161,27 @@
     .history-badge.accept { background: rgba(34,197,94,0.12); color: var(--green); }
     .history-badge.reject { background: rgba(239,68,68,0.12); color: var(--red); }
 
-    /* ── FLASH ── */
     #flashOverlay { position:fixed; inset:0; pointer-events:none; opacity:0; z-index:50; }
     @keyframes screenFlash { 0%{opacity:1} 100%{opacity:0} }
     #flashOverlay.flash { animation: screenFlash 0.4s ease-out forwards; }
 
-    /* ── TOAST ── */
-    #toast {
-      position:fixed; bottom:28px; left:50%;
-      transform: translateX(-50%) translateY(70px);
-      background: var(--surface2); border: 1px solid var(--border);
-      padding: 10px 20px; border-radius: 99px; font-size: 0.82rem;
-      white-space: nowrap; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
-      z-index: 999; pointer-events: none;
-    }
+    #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(70px); background:var(--surface2); border:1px solid var(--border); padding:10px 20px; border-radius:99px; font-size:0.82rem; white-space:nowrap; transition:transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index:999; pointer-events:none; }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
-    .storage-note {
-      background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.18);
-      border-radius: 6px; padding: 10px 14px; font-size: 0.75rem;
-      color: #86efac; line-height: 1.5; display: flex; gap: 8px; align-items: flex-start;
-    }
+    .storage-note { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.18); border-radius: 6px; padding: 10px 14px; font-size: 0.75rem; color: #86efac; line-height: 1.5; display: flex; gap: 8px; align-items: flex-start; }
     .storage-note svg { flex-shrink: 0; margin-top: 1px; }
 
     .info-note { font-size:0.74rem; color:var(--muted); text-align:center; padding:0 8px; line-height:1.6; }
   </style>
 </head>
 <body>
-
 <div id="flashOverlay"></div>
 
 <header>
   <div class="logo">Ware<span>Scan</span></div>
   <div class="tagline">Warehouse Barcode Verifier</div>
   <div class="pill-row">
-    <div class="pill" id="dbStatus">
-      <span class="dot"></span>
-      <span id="dbStatusText">No database loaded</span>
-    </div>
+    <div class="pill" id="dbStatus"><span class="dot"></span><span id="dbStatusText">No database loaded</span></div>
     <div class="pill pill-accent">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
       Auto-trims spaces
@@ -317,24 +194,33 @@
 
   <div class="storage-note" id="storageNote" style="display:none;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    <span>Database is saved on this device. No re-upload needed after refresh — data persists until you click <strong>Clear Data</strong>.</span>
+    <span>Database saved on this device — no re-upload needed after refresh. Persists until you click <strong>Clear Data</strong>.</span>
   </div>
 
   <!-- 1. UPLOAD DATA -->
   <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-    </svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     Upload Data
   </button>
 
+  <!-- DB PREVIEW — shows exactly what was loaded so you can verify -->
+  <div class="db-preview" id="dbPreview" style="display:none;">
+    <div class="db-preview-header" onclick="togglePreview()">
+      <div class="db-preview-title">
+        Loaded Barcodes
+        <span class="count-badge" id="previewCount">0</span>
+      </div>
+      <span class="db-preview-toggle" id="previewToggleLabel">▼ Show</span>
+    </div>
+    <div class="db-preview-body" id="dbPreviewBody">
+      <div class="db-codes" id="dbCodesList"></div>
+      <div class="db-note" id="dbNote"></div>
+    </div>
+  </div>
+
   <!-- 2. CLEAR DATA -->
   <button class="btn btn-clear" id="btnClear" onclick="clearData()" disabled>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-    </svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
     Clear Data
   </button>
 
@@ -342,31 +228,20 @@
 
   <!-- 3. START SCANNING -->
   <button class="btn btn-scan" id="btnScan" onclick="toggleScanner()" disabled>
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"/>
-      <line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="4" x2="10" y2="20"/>
-      <line x1="14" y1="4" x2="14" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/>
-    </svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="4" x2="10" y2="20"/><line x1="14" y1="4" x2="14" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/></svg>
     <span id="scanBtnText">Start Scanning</span>
   </button>
 
-  <!-- SCANNER VIEW — html5-qrcode renders into #reader -->
+  <!-- SCANNER VIEW -->
   <div id="scannerPanel">
     <div class="scan-wrap">
       <div id="reader"></div>
-      <div class="scan-frame-overlay">
-        <div class="scan-corners"><span></span><div class="scan-line"></div></div>
-      </div>
-      <div id="cameraLoading">
-        <div class="spinner"></div>
-        <span>Starting camera…</span>
-      </div>
+      <div class="scan-frame-overlay"><div class="scan-corners"><span></span><div class="scan-line"></div></div></div>
+      <div id="cameraLoading"><div class="spinner"></div><span>Starting camera…</span></div>
     </div>
     <div class="result-panel" id="resultPanel">
       <div class="result-icon idle" id="resultIcon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/>
-        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/></svg>
       </div>
       <div>
         <div class="result-label idle" id="resultLabel">Awaiting scan…</div>
@@ -384,10 +259,7 @@
 
   <!-- EXPORT -->
   <button class="btn btn-export" id="btnExport" onclick="exportToExcel()" disabled>
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Export Scan Report (.xlsx)
   </button>
 
@@ -401,39 +273,70 @@
   </div>
 
   <p class="info-note">
-    Upload an Excel (.xlsx / .xls) or CSV file with barcodes in any column.<br>
-    Data is saved on this device — no re-upload needed after refresh.<br>
-    Use <strong style="color:var(--text)">Export Scan Report</strong> to download a timestamped .xlsx log.
+    Upload an Excel (.xlsx/.xls) or CSV with barcodes in any columns.<br>
+    Headers are automatically detected and skipped.<br>
+    Tap <strong style="color:var(--text)">Loaded Barcodes</strong> above to verify what was imported.
   </p>
 </main>
 
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════
-//  NORMALISE — strip all whitespace variants
-//  from both ends (spaces, tabs, NBSP, BOM…)
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//  NORMALISE
+//  Strips ALL whitespace variants from both ends:
+//  regular spaces/tabs/newlines, non-breaking space (\u00A0),
+//  zero-width space (\u200B), BOM (\uFEFF).
+//  Internal spaces ("ABC 123") are preserved.
+// ══════════════════════════════════════════════════════════
 function normalise(raw) {
   if (raw == null) return '';
   return String(raw).replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
 }
 
-// ── CONSTANTS ──────────────────────────────────
-const LS_KEY = 'warescan_db_v1';
+// ══════════════════════════════════════════════════════════
+//  HEADER DETECTION
+//  A cell is treated as a header (and skipped) if it:
+//    • contains only letters, spaces, underscores, hyphens
+//      with no digits  (e.g. "Pack Barcode", "Item Barcode")
+//    • OR matches common header words exactly
+//  Any cell containing at least one digit is treated as a
+//  real barcode and kept. This covers EAN, Code128, QR, etc.
+//  Adjust this function if your barcodes are purely alphabetic.
+// ══════════════════════════════════════════════════════════
+const HEADER_WORDS = new Set([
+  'pack barcode','item barcode','barcode','bar code',
+  'sku','code','product code','product barcode',
+  'serial','serial number','batch','lot','id','item id',
+  'scan code','scan barcode','pack','item','description',
+  'name','qty','quantity','uom','unit'
+]);
 
-// ── STATE ──────────────────────────────────────
+function looksLikeHeader(value) {
+  const v = value.toLowerCase().trim();
+  if (HEADER_WORDS.has(v)) return true;
+  // purely alphabetic + spaces/dashes/underscores, no digits → header
+  if (/^[a-z\s_\-]+$/.test(v)) return true;
+  return false;
+}
+
+// ── CONSTANTS ───────────────────────────────────
+const LS_KEY      = 'warescan_db_v1';
+const LS_META_KEY = 'warescan_meta_v1';
+
+// ── STATE ───────────────────────────────────────
 let barcodeDB    = new Set();
-let html5QrCode  = null;       // html5-qrcode scanner instance
+let html5QrCode  = null;
 let isScanning   = false;
 let lastScanned  = null;
 let scanCooldown = false;
 let stats        = { total:0, accept:0, reject:0 };
 let scanLog      = [];
+let previewOpen  = false;
 
-// ══════════════════════════════════════════════
-//  LOCALSTORAGE — save/restore barcode set
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//  LOCALSTORAGE
+// ══════════════════════════════════════════════════════════
 function saveDB() {
   try { localStorage.setItem(LS_KEY, JSON.stringify([...barcodeDB])); }
   catch(e) { console.warn('localStorage save failed:', e); }
@@ -452,38 +355,66 @@ function loadDB() {
 
 function clearDB() {
   barcodeDB.clear();
-  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  try { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_META_KEY); } catch(e) {}
 }
 
-// ── RESTORE DB ON PAGE LOAD ────────────────────
+// ── RESTORE ON PAGE LOAD ────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (loadDB()) {
     setDBLoaded(barcodeDB.size, true);
+    renderPreview();
   }
 });
 
-// ── FILE UPLOAD ────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  FILE UPLOAD
+//  Reads ALL columns from the first sheet.
+//  Skips any cell that looks like a column header.
+//  Everything else (after trimming) is added to the Set.
+// ══════════════════════════════════════════════════════════
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
       const wb   = XLSX.read(new Uint8Array(ev.target.result), { type:'array' });
       const ws   = wb.Sheets[wb.SheetNames[0]];
+      // header:1 → row arrays, raw:false → everything as string
       const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+
       barcodeDB.clear();
-      let skipped = 0;
-      rows.forEach(row => row.forEach(cell => {
-        const c = normalise(cell);
-        if (!c) { skipped++; return; }
-        barcodeDB.add(c);
-      }));
-      if (barcodeDB.size === 0) { showToast('⚠️ No valid barcodes found'); return; }
+      let skippedHeaders = 0;
+      let skippedBlanks  = 0;
+
+      rows.forEach(row => {
+        row.forEach(cell => {
+          const clean = normalise(cell);
+
+          // Skip blanks
+          if (clean === '') { skippedBlanks++; return; }
+
+          // Skip header-like text
+          if (looksLikeHeader(clean)) { skippedHeaders++; return; }
+
+          barcodeDB.add(clean);
+        });
+      });
+
+      if (barcodeDB.size === 0) {
+        showToast('⚠️ No valid barcodes found — check your file');
+        return;
+      }
+
       saveDB();
       setDBLoaded(barcodeDB.size, false);
-      showToast(`✅ ${barcodeDB.size} barcodes saved from "${wb.SheetNames[0]}"` +
-                (skipped ? ` (${skipped} blank cells skipped)` : ''));
+      renderPreview();
+
+      let note = `✅ ${barcodeDB.size} barcodes saved`;
+      if (skippedHeaders > 0) note += ` (${skippedHeaders} header rows skipped)`;
+      showToast(note);
+
     } catch(err) {
       console.error(err);
       showToast('❌ Failed to read file — use .xlsx, .xls or .csv');
@@ -499,10 +430,39 @@ function setDBLoaded(count, isRestored) {
   document.getElementById('btnClear').disabled = false;
   document.getElementById('btnScan').disabled  = false;
   document.getElementById('storageNote').style.display = 'flex';
-  if (isRestored) showToast(`♻️ ${count.toLocaleString()} barcodes restored from saved data`);
+  document.getElementById('dbPreview').style.display   = 'block';
+  document.getElementById('previewCount').textContent  = count.toLocaleString();
+  if (isRestored) showToast(`♻️ ${count.toLocaleString()} barcodes restored`);
 }
 
-// ── CLEAR DATA ─────────────────────────────────
+// ── DB PREVIEW ──────────────────────────────────
+function renderPreview() {
+  const list = document.getElementById('dbCodesList');
+  const note = document.getElementById('dbNote');
+  list.innerHTML = '';
+
+  const codes = [...barcodeDB];
+  const show  = codes.slice(0, 200);   // show first 200 max
+
+  show.forEach(code => {
+    const chip = document.createElement('span');
+    chip.className   = 'db-code-chip';
+    chip.textContent = code;
+    list.appendChild(chip);
+  });
+
+  note.textContent = codes.length > 200
+    ? `Showing first 200 of ${codes.length} barcodes. All ${codes.length} are active for matching.`
+    : `${codes.length} barcode${codes.length !== 1 ? 's' : ''} loaded and active for matching.`;
+}
+
+function togglePreview() {
+  previewOpen = !previewOpen;
+  document.getElementById('dbPreviewBody').classList.toggle('open', previewOpen);
+  document.getElementById('previewToggleLabel').textContent = previewOpen ? '▲ Hide' : '▼ Show';
+}
+
+// ── CLEAR DATA ──────────────────────────────────
 function clearData() {
   if (!confirm('Permanently delete the saved barcode database and scan history?')) return;
   clearDB();
@@ -512,25 +472,21 @@ function clearData() {
   document.getElementById('btnScan').disabled   = true;
   document.getElementById('btnExport').disabled = true;
   document.getElementById('storageNote').style.display = 'none';
+  document.getElementById('dbPreview').style.display   = 'none';
+  document.getElementById('dbCodesList').innerHTML     = '';
   if (isScanning) stopScanner();
-  stats = { total:0, accept:0, reject:0 }; scanLog = [];
+  stats   = { total:0, accept:0, reject:0 }; scanLog = [];
   ['statTotal','statAccept','statReject'].forEach(id => document.getElementById(id).textContent = '0');
-  document.getElementById('historyList').innerHTML = '';
+  document.getElementById('historyList').innerHTML    = '';
   document.getElementById('historyCount').textContent = '';
   document.getElementById('historySection').classList.remove('visible');
   setResultIdle();
   showToast('🗑️ Database cleared from this device');
 }
 
-// ══════════════════════════════════════════════
-//  SCANNER  —  uses html5-qrcode library
-//  This library:
-//  • calls getUserMedia correctly on mobile
-//  • exposes a clean start/stop API
-//  • supports all barcode formats via ZXing
-//    bundled internally (no separate ZXing calls)
-//  • works on iOS Safari 14.3+, Android Chrome
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//  SCANNER
+// ══════════════════════════════════════════════════════════
 function toggleScanner() { isScanning ? stopScanner() : startScanner(); }
 
 async function startScanner() {
@@ -542,36 +498,23 @@ async function startScanner() {
   setResultIdle();
 
   try {
-    // Create fresh instance each time (required by html5-qrcode)
     html5QrCode = new Html5Qrcode('reader');
 
-    // Get available cameras using the html5-qrcode helper (correct API)
     let cameras = [];
-    try {
-      cameras = await Html5Qrcode.getCameras();
-    } catch(e) {
-      // getCameras may throw if permission not yet granted — that's fine,
-      // we'll start without specifying a device and let the browser pick
-    }
+    try { cameras = await Html5Qrcode.getCameras(); } catch(e) {}
 
-    // Pick rear/back camera if available, otherwise first camera
-    let deviceId = undefined;  // undefined = let browser decide (usually rear on mobile)
+    let cameraIdOrConstraint = { facingMode: 'environment' };
     if (cameras && cameras.length > 0) {
-      const rear = cameras.find(c =>
-        /back|rear|environment/i.test(c.label)
-      );
-      deviceId = rear ? rear.id : cameras[cameras.length - 1].id;
-      // cameras are usually listed front-first, so last = rear
+      const rear = cameras.find(c => /back|rear|environment/i.test(c.label));
+      if (rear) cameraIdOrConstraint = rear.id;
+      else cameraIdOrConstraint = cameras[cameras.length - 1].id;
     }
 
     const config = {
       fps: 15,
-      qrbox: { width: 260, height: 260 },   // scan region
+      qrbox: { width:260, height:260 },
       aspectRatio: 1.0,
-      supportedScanTypes: [
-        Html5QrcodeScanType.SCAN_TYPE_CAMERA
-      ],
-      // Try every barcode format
+      supportedScanTypes: [ Html5QrcodeScanType.SCAN_TYPE_CAMERA ],
       formatsToSupport: [
         Html5QrcodeSupportedFormats.QR_CODE,
         Html5QrcodeSupportedFormats.EAN_13,
@@ -589,32 +532,17 @@ async function startScanner() {
       ]
     };
 
-    const cameraConstraintOrId = deviceId
-      ? deviceId
-      : { facingMode: 'environment' };   // fallback to environment-facing
-
-    await html5QrCode.start(
-      cameraConstraintOrId,
-      config,
-      onScanSuccess,   // called on every successful decode
-      null             // suppress per-frame "not found" errors
-    );
-
+    await html5QrCode.start(cameraIdOrConstraint, config, onScanSuccess, null);
     document.getElementById('cameraLoading').classList.add('hidden');
 
   } catch(err) {
     console.error('Camera start error:', err);
     document.getElementById('cameraLoading').classList.add('hidden');
-
-    let msg = '❌ Could not start camera';
     const s = String(err).toLowerCase();
-    if (s.includes('permission') || s.includes('notallowed') || s.includes('denied')) {
-      msg = '❌ Camera permission denied — allow camera in browser settings';
-    } else if (s.includes('notfound') || s.includes('no camera')) {
-      msg = '❌ No camera found on this device';
-    } else if (s.includes('notreadable') || s.includes('in use')) {
-      msg = '❌ Camera is in use by another app';
-    }
+    let msg = '❌ Could not start camera';
+    if (s.includes('permission') || s.includes('notallowed') || s.includes('denied')) msg = '❌ Camera permission denied — allow in browser settings';
+    else if (s.includes('notfound') || s.includes('no camera')) msg = '❌ No camera found on this device';
+    else if (s.includes('notreadable') || s.includes('in use')) msg = '❌ Camera is in use by another app';
     showToast(msg);
     stopScanner();
   }
@@ -622,39 +550,41 @@ async function startScanner() {
 
 async function stopScanner() {
   if (html5QrCode) {
-    try {
-      const state = html5QrCode.getState();
-      // State 2 = SCANNING, State 3 = PAUSED
-      if (state === 2 || state === 3) {
-        await html5QrCode.stop();
-      }
-    } catch(e) { /* ignore stop errors */ }
+    try { const st = html5QrCode.getState(); if (st===2||st===3) await html5QrCode.stop(); } catch(e) {}
     try { html5QrCode.clear(); } catch(e) {}
     html5QrCode = null;
   }
   document.getElementById('scannerPanel').style.display    = 'none';
-  document.getElementById('cameraLoading').classList.remove('hidden'); // reset for next open
+  document.getElementById('cameraLoading').classList.remove('hidden');
   document.getElementById('btnScan').classList.remove('scanning');
   document.getElementById('scanBtnText').textContent       = 'Start Scanning';
   isScanning = false;
 }
 
-// ── SCAN SUCCESS CALLBACK ──────────────────────
+// ══════════════════════════════════════════════════════════
+//  SCAN MATCH
+//  The scanned value is normalised (trimmed) before lookup.
+//  The database was also normalised on import, so the match
+//  is always clean on both sides.
+// ══════════════════════════════════════════════════════════
 function onScanSuccess(decodedText) {
-  const code = normalise(decodedText);     // ← TRIM ON SCAN
+  const code = normalise(decodedText);
   if (!code) return;
 
-  // 2-second cooldown per identical code
+  // 2-second cooldown per identical code to prevent rapid duplicates
   if (scanCooldown && code === lastScanned) return;
   lastScanned  = code;
   scanCooldown = true;
   setTimeout(() => { scanCooldown = false; }, 2000);
 
-  const accepted = barcodeDB.has(code);   // exact match (both sides already trimmed)
-  const state    = accepted ? 'accept' : 'reject';
-  const now      = new Date();
-  const dateStr  = now.toLocaleDateString('en-GB');
-  const timeStr  = now.toLocaleTimeString('en-GB', { hour12:false });
+  // ── THE MATCH ──────────────────────────────────
+  const accepted = barcodeDB.has(code);
+  // ───────────────────────────────────────────────
+
+  const state   = accepted ? 'accept' : 'reject';
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-GB');
+  const timeStr = now.toLocaleTimeString('en-GB', { hour12:false });
 
   stats.total++;
   if (accepted) stats.accept++; else stats.reject++;
@@ -668,7 +598,6 @@ function onScanSuccess(decodedText) {
   document.getElementById('statAccept').textContent = stats.accept;
   document.getElementById('statReject').textContent = stats.reject;
 
-  // Result panel update
   const panel     = document.getElementById('resultPanel');
   const icon      = document.getElementById('resultIcon');
   const label     = document.getElementById('resultLabel');
@@ -693,30 +622,23 @@ function onScanSuccess(decodedText) {
   overlay.classList.add('flash');
 
   if (navigator.vibrate) navigator.vibrate(accepted ? [80] : [120,60,120]);
-
   addHistory(code, state, timeStr);
 }
 
-// ── HISTORY ────────────────────────────────────
 function addHistory(code, state, time) {
   document.getElementById('historySection').classList.add('visible');
   const list = document.getElementById('historyList');
   const item = document.createElement('div');
   item.className = `history-item ${state}`;
-  item.innerHTML = `
-    <span class="history-code">${escapeHtml(code)}</span>
-    <span class="history-time">${time}</span>
-    <span class="history-badge ${state}">${state==='accept'?'OK':'FAIL'}</span>`;
+  item.innerHTML = `<span class="history-code">${escapeHtml(code)}</span><span class="history-time">${time}</span><span class="history-badge ${state}">${state==='accept'?'OK':'FAIL'}</span>`;
   list.insertBefore(item, list.firstChild);
   while (list.children.length > 50) list.removeChild(list.lastChild);
-  document.getElementById('historyCount').textContent =
-    `${scanLog.length} scan${scanLog.length!==1?'s':''}`;
+  document.getElementById('historyCount').textContent = `${scanLog.length} scan${scanLog.length!==1?'s':''}`;
 }
 
-// ── EXPORT TO EXCEL ────────────────────────────
+// ── EXPORT ──────────────────────────────────────
 function exportToExcel() {
   if (scanLog.length === 0) { showToast('⚠️ No scans to export yet'); return; }
-
   const wb  = XLSX.utils.book_new();
   const hdr = ['#','Barcode','Status','Date','Time'];
   const rows = scanLog.map(e => [e.seq, e.barcode, e.status, e.date, e.time]);
@@ -725,47 +647,36 @@ function exportToExcel() {
                 ['Total Scanned', stats.total,'','',''],
                 ['Accepted',      stats.accept,'','',''],
                 ['Rejected',      stats.reject,'','','']];
-
   const ws = XLSX.utils.aoa_to_sheet(all);
   ws['!cols'] = [{wch:6},{wch:28},{wch:12},{wch:12},{wch:10}];
-
   const hStyle = { font:{bold:true,color:{rgb:'FFFFFF'},name:'Arial',sz:10}, fill:{fgColor:{rgb:'1E2433'}}, alignment:{horizontal:'center'}, border:{bottom:{style:'medium',color:{rgb:'F0B429'}}} };
   ['A1','B1','C1','D1','E1'].forEach(r => { if(!ws[r]) ws[r]={v:'',t:'s'}; ws[r].s=hStyle; });
-
   const aStyle = { font:{bold:true,color:{rgb:'16A34A'},name:'Arial',sz:10}, fill:{fgColor:{rgb:'F0FDF4'}}, alignment:{horizontal:'center',vertical:'center'} };
   const rStyle = { font:{bold:true,color:{rgb:'DC2626'},name:'Arial',sz:10}, fill:{fgColor:{rgb:'FEF2F2'}}, alignment:{horizontal:'center',vertical:'center'} };
   const base   = { font:{name:'Arial',sz:10}, alignment:{vertical:'center'} };
-
   scanLog.forEach((entry, i) => {
-    const row  = i + 2;
-    const fill = { fgColor:{ rgb: i%2===1 ? 'F8F9FA':'FFFFFF' } };
-    const ctr  = { horizontal:'center', vertical:'center' };
-    const r    = c => `${c}${row}`;
-    if(ws[r('A')]) ws[r('A')].s = {...base, fill, alignment:ctr};
-    if(ws[r('B')]) ws[r('B')].s = {font:{name:'Courier New',sz:10}, fill, alignment:{vertical:'center'}};
-    if(ws[r('C')]) ws[r('C')].s = entry.status==='ACCEPTED' ? aStyle : rStyle;
-    if(ws[r('D')]) ws[r('D')].s = {...base, fill, alignment:ctr};
-    if(ws[r('E')]) ws[r('E')].s = {...base, fill, alignment:ctr};
+    const row=i+2, fill={fgColor:{rgb:i%2===1?'F8F9FA':'FFFFFF'}}, ctr={horizontal:'center',vertical:'center'}, r=c=>`${c}${row}`;
+    if(ws[r('A')]) ws[r('A')].s={...base,fill,alignment:ctr};
+    if(ws[r('B')]) ws[r('B')].s={font:{name:'Courier New',sz:10},fill,alignment:{vertical:'center'}};
+    if(ws[r('C')]) ws[r('C')].s=entry.status==='ACCEPTED'?aStyle:rStyle;
+    if(ws[r('D')]) ws[r('D')].s={...base,fill,alignment:ctr};
+    if(ws[r('E')]) ws[r('E')].s={...base,fill,alignment:ctr};
   });
-
-  const so = rows.length + 3;
-  const sH = {font:{bold:true,color:{rgb:'FFFFFF'},name:'Arial',sz:10},fill:{fgColor:{rgb:'1E2433'}}};
-  const sL = {font:{bold:true,name:'Arial',sz:10,color:{rgb:'374151'}},fill:{fgColor:{rgb:'F3F4F6'}}};
-  const sN = c => ({font:{bold:true,name:'Arial',sz:11,color:{rgb:c}},fill:{fgColor:{rgb:'F3F4F6'}},alignment:{horizontal:'center'}});
-  if(ws[`A${so}`])   ws[`A${so}`].s   = sH;
-  if(ws[`A${so+1}`]) ws[`A${so+1}`].s = sL; if(ws[`B${so+1}`]) ws[`B${so+1}`].s = sN('374151');
-  if(ws[`A${so+2}`]) ws[`A${so+2}`].s = sL; if(ws[`B${so+2}`]) ws[`B${so+2}`].s = sN('16A34A');
-  if(ws[`A${so+3}`]) ws[`A${so+3}`].s = sL; if(ws[`B${so+3}`]) ws[`B${so+3}`].s = sN('DC2626');
-
+  const so=rows.length+3;
+  const sH={font:{bold:true,color:{rgb:'FFFFFF'},name:'Arial',sz:10},fill:{fgColor:{rgb:'1E2433'}}};
+  const sL={font:{bold:true,name:'Arial',sz:10,color:{rgb:'374151'}},fill:{fgColor:{rgb:'F3F4F6'}}};
+  const sN=c=>({font:{bold:true,name:'Arial',sz:11,color:{rgb:c}},fill:{fgColor:{rgb:'F3F4F6'}},alignment:{horizontal:'center'}});
+  if(ws[`A${so}`])   ws[`A${so}`].s=sH;
+  if(ws[`A${so+1}`]) ws[`A${so+1}`].s=sL; if(ws[`B${so+1}`]) ws[`B${so+1}`].s=sN('374151');
+  if(ws[`A${so+2}`]) ws[`A${so+2}`].s=sL; if(ws[`B${so+2}`]) ws[`B${so+2}`].s=sN('16A34A');
+  if(ws[`A${so+3}`]) ws[`A${so+3}`].s=sL; if(ws[`B${so+3}`]) ws[`B${so+3}`].s=sN('DC2626');
   XLSX.utils.book_append_sheet(wb, ws, 'Scan Report');
-
-  const now = new Date();
-  const ts  = `${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}`;
+  const now=new Date(), ts=`${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}`;
   XLSX.writeFile(wb, `warescan_report_${ts}.xlsx`);
   showToast(`📥 Exported ${scanLog.length} scans`);
 }
 
-// ── HELPERS ────────────────────────────────────
+// ── HELPERS ─────────────────────────────────────
 function setResultIdle() {
   document.getElementById('resultIcon').className    = 'result-icon idle';
   document.getElementById('resultIcon').innerHTML    = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/></svg>`;
@@ -773,16 +684,11 @@ function setResultIdle() {
   document.getElementById('resultLabel').textContent   = 'Awaiting scan…';
   document.getElementById('resultBarcode').textContent = 'Point camera at a barcode';
 }
-
 let toastTimer;
 function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),3500);
 }
-
 function p2(n) { return String(n).padStart(2,'0'); }
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
