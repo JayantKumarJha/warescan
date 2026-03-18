@@ -20,6 +20,7 @@
       --accent2: #e05c00;
       --green: #22c55e;
       --red: #ef4444;
+      --blue: #3b82f6;
       --text: #e8eaf0;
       --muted: #6b7280;
       --scan-line: rgba(240,180,41,0.6);
@@ -76,40 +77,38 @@
       margin-top: 2px;
     }
 
-    .db-status {
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .pill {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      margin-top: 12px;
-      padding: 5px 12px;
+      gap: 6px;
+      padding: 5px 11px;
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 99px;
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       color: var(--muted);
     }
-    .db-status .dot {
+    .pill .dot {
       width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--muted);
       transition: background 0.3s;
     }
-    .db-status.loaded .dot { background: var(--green); }
-    .db-status.loaded { color: var(--text); }
+    .pill.loaded .dot { background: var(--green); }
+    .pill.loaded { color: var(--text); }
 
-    .trim-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
+    .pill-accent {
       background: rgba(240,180,41,0.08);
-      border: 1px solid rgba(240,180,41,0.2);
-      border-radius: 99px;
-      font-size: 0.7rem;
+      border-color: rgba(240,180,41,0.2);
       color: var(--accent);
-      letter-spacing: 0.06em;
-      margin-top: 12px;
-      margin-left: 6px;
     }
 
     main {
@@ -123,14 +122,15 @@
       gap: 12px;
     }
 
+    /* ── BUTTONS ── */
     .btn {
       width: 100%;
-      padding: 18px 24px;
+      padding: 17px 24px;
       border: none;
       border-radius: 6px;
       font-family: 'Barlow Condensed', sans-serif;
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.08rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       cursor: pointer;
@@ -161,12 +161,21 @@
       background: var(--accent);
       color: #000;
       border: 1px solid var(--accent);
-      font-size: 1.25rem;
-      padding: 22px 24px;
+      font-size: 1.2rem;
+      padding: 21px 24px;
     }
     .btn-scan:hover:not(:disabled) { background: #f5c842; }
     .btn-scan:disabled { background: var(--surface2); color: var(--muted); border-color: var(--border); cursor: not-allowed; }
     .btn-scan.scanning { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+    /* Export button */
+    .btn-export {
+      background: transparent;
+      color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.35);
+    }
+    .btn-export:hover:not(:disabled) { background: rgba(59,130,246,0.08); border-color: var(--blue); }
+    .btn-export:disabled { opacity: 0.3; cursor: not-allowed; }
 
     #fileInput { display: none; }
 
@@ -351,19 +360,25 @@
     #historySection { display: none; }
     #historySection.visible { display: block; }
 
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
     .history-header {
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 0.75rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 8px;
     }
+
     .history-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
-      max-height: 200px;
+      max-height: 240px;
       overflow-y: auto;
     }
     .history-item {
@@ -380,7 +395,15 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
     .history-item.accept { border-left-color: var(--green); }
     .history-item.reject { border-left-color: var(--red); }
-    .history-code { font-family: 'Barlow Condensed', sans-serif; flex: 1; letter-spacing: 0.03em; }
+    .history-code {
+      font-family: 'Barlow Condensed', sans-serif;
+      flex: 1;
+      letter-spacing: 0.03em;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .history-time { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
     .history-badge {
       font-size: 0.65rem;
@@ -389,6 +412,7 @@
       text-transform: uppercase;
       padding: 2px 8px;
       border-radius: 99px;
+      white-space: nowrap;
     }
     .history-badge.accept { background: rgba(34,197,94,0.12); color: var(--green); }
     .history-badge.reject { background: rgba(239,68,68,0.12); color: var(--red); }
@@ -441,12 +465,12 @@
 <header>
   <div class="logo">Ware<span>Scan</span></div>
   <div class="tagline">Warehouse Barcode Verifier</div>
-  <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-    <div class="db-status" id="dbStatus">
+  <div class="pill-row">
+    <div class="pill" id="dbStatus">
       <span class="dot"></span>
       <span id="dbStatusText">No database loaded</span>
     </div>
-    <div class="trim-badge">
+    <div class="pill pill-accent">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
       Auto-trims spaces
     </div>
@@ -491,7 +515,7 @@
     <span id="scanBtnText">Start Scanning</span>
   </button>
 
-  <!-- Camera picker (only shown if device has multiple cameras) -->
+  <!-- Camera picker -->
   <select id="cameraSelect" onchange="switchCamera()"></select>
 
   <!-- SCANNER VIEW -->
@@ -535,48 +559,60 @@
     </div>
   </div>
 
+  <!-- EXPORT BUTTON -->
+  <button class="btn btn-export" id="btnExport" onclick="exportToExcel()" disabled>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Export Scan Report (.xlsx)
+  </button>
+
   <!-- SCAN HISTORY -->
   <div id="historySection">
-    <div class="history-header">Scan History</div>
+    <div class="section-header">
+      <div class="history-header">Scan History</div>
+      <div style="font-size:0.72rem; color:var(--muted);" id="historyCount"></div>
+    </div>
     <div class="history-list" id="historyList"></div>
   </div>
 
   <p class="info-note">
     Upload an Excel (.xlsx / .xls) or CSV file with barcodes in any column.<br>
-    Leading &amp; trailing spaces in barcode data are automatically ignored at every step.
+    Leading &amp; trailing spaces are automatically ignored at every step.<br>
+    Use <strong style="color:var(--text)">Export Scan Report</strong> to download a timestamped .xlsx log.
   </p>
 </main>
 
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  NORMALISE — strips ALL whitespace variants from both
-//  ends of a value so " ABC123 " === "ABC123".
-//
-//  Handles:
-//    \s       — regular spaces, tabs, newlines, CR
-//    \u00A0   — non-breaking space (common in Excel)
-//    \u200B   — zero-width space
-//    \uFEFF   — BOM / zero-width no-break space
-//  Does NOT collapse internal spaces so "ABC 123" is
-//  preserved as-is.
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  NORMALISE — strips all whitespace variants from both ends.
+//  Handles: regular spaces/tabs/newlines (\s), non-breaking
+//  space (\u00A0), zero-width space (\u200B), BOM (\uFEFF).
+//  Internal spaces (e.g. "ABC 123") are preserved.
+// ═══════════════════════════════════════════════════════════
 function normalise(raw) {
   if (raw === null || raw === undefined) return '';
   return String(raw).replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
 }
 
-// ── STATE ──────────────────────────────────────────────
-let barcodeDB       = new Set();
-let codeReader      = null;
-let isScanning      = false;
+// ── STATE ──────────────────────────────────────────────────
+let barcodeDB        = new Set();
+let codeReader       = null;
+let isScanning       = false;
 let selectedDeviceId = null;
-let lastScanned     = null;
-let scanCooldown    = false;
-let stats           = { total: 0, accept: 0, reject: 0 };
+let lastScanned      = null;
+let scanCooldown     = false;
+let stats            = { total: 0, accept: 0, reject: 0 };
 
-// ── FILE UPLOAD ────────────────────────────────────────
+// scanLog holds every scan in chronological order for export
+// Each entry: { seq, barcode, status, date, time, timestamp }
+let scanLog = [];
+
+// ── FILE UPLOAD ────────────────────────────────────────────
 document.getElementById('fileInput').addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -587,8 +623,6 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
       const data = new Uint8Array(ev.target.result);
       const wb   = XLSX.read(data, { type: 'array' });
       const ws   = wb.Sheets[wb.SheetNames[0]];
-
-      // raw:false → all cells as strings; defval:'' → empty cells give ''
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
 
       barcodeDB.clear();
@@ -602,88 +636,80 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
         });
       });
 
-      if (barcodeDB.size === 0) {
-        showToast('⚠️ No valid barcodes found in file');
-        return;
-      }
+      if (barcodeDB.size === 0) { showToast('⚠️ No valid barcodes found in file'); return; }
 
-      // Update status pill
       document.getElementById('dbStatus').classList.add('loaded');
       document.getElementById('dbStatusText').textContent =
         `${barcodeDB.size.toLocaleString()} barcodes loaded`;
-
       document.getElementById('btnClear').disabled = false;
       document.getElementById('btnScan').disabled  = false;
 
       const note = skipped > 0 ? ` (${skipped} blank cells skipped)` : '';
       showToast(`✅ ${barcodeDB.size} barcodes loaded from "${wb.SheetNames[0]}"${note}`);
-
     } catch (err) {
       console.error(err);
       showToast('❌ Failed to read file — use .xlsx, .xls or .csv');
     }
   };
   reader.readAsArrayBuffer(file);
-  this.value = ''; // allow re-selecting the same file
+  this.value = '';
 });
 
-// ── CLEAR DATA ─────────────────────────────────────────
+// ── CLEAR DATA ─────────────────────────────────────────────
 function clearData() {
   if (!confirm('Clear all loaded barcode data and scan history?')) return;
 
   barcodeDB.clear();
   document.getElementById('dbStatus').classList.remove('loaded');
   document.getElementById('dbStatusText').textContent = 'No database loaded';
-  document.getElementById('btnClear').disabled = true;
-  document.getElementById('btnScan').disabled  = true;
+  document.getElementById('btnClear').disabled  = true;
+  document.getElementById('btnScan').disabled   = true;
+  document.getElementById('btnExport').disabled = true;
 
   if (isScanning) stopScanner();
 
-  stats = { total: 0, accept: 0, reject: 0 };
+  stats   = { total: 0, accept: 0, reject: 0 };
+  scanLog = [];
   document.getElementById('statTotal').textContent  = '0';
   document.getElementById('statAccept').textContent = '0';
   document.getElementById('statReject').textContent = '0';
-
-  document.getElementById('historyList').innerHTML = '';
+  document.getElementById('historyList').innerHTML  = '';
+  document.getElementById('historyCount').textContent = '';
   document.getElementById('historySection').classList.remove('visible');
 
   setResultIdle();
   showToast('🗑️ Data cleared');
 }
 
-// ── SCANNER TOGGLE ─────────────────────────────────────
-function toggleScanner() {
-  isScanning ? stopScanner() : startScanner();
-}
+// ── SCANNER TOGGLE ──────────────────────────────────────────
+function toggleScanner() { isScanning ? stopScanner() : startScanner(); }
 
 async function startScanner() {
   document.getElementById('scannerPanel').style.display = 'flex';
   document.getElementById('btnScan').classList.add('scanning');
-  document.getElementById('scanBtnText').textContent = 'Stop Scanning';
+  document.getElementById('scanBtnText').textContent    = 'Stop Scanning';
   isScanning = true;
   setResultIdle();
 
   try {
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader    = new ZXing.BrowserMultiFormatReader();
     const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+    const sel     = document.getElementById('cameraSelect');
 
-    const sel = document.getElementById('cameraSelect');
     if (devices.length > 1) {
       sel.style.display = 'block';
       sel.innerHTML = devices.map((d, i) =>
         `<option value="${d.deviceId}">${d.label || 'Camera ' + (i + 1)}</option>`
       ).join('');
-      // Prefer rear/back camera for warehouse scanners
-      const rear = devices.find(d => /back|rear|environment/i.test(d.label));
+      const rear       = devices.find(d => /back|rear|environment/i.test(d.label));
       selectedDeviceId = rear ? rear.deviceId : devices[0].deviceId;
-      sel.value = selectedDeviceId;
+      sel.value        = selectedDeviceId;
     } else {
       sel.style.display = 'none';
-      selectedDeviceId = devices[0]?.deviceId ?? null;
+      selectedDeviceId  = devices[0]?.deviceId ?? null;
     }
 
     await codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', onScanResult);
-
   } catch (err) {
     console.error(err);
     showToast('❌ Camera access denied or not available');
@@ -692,15 +718,9 @@ async function startScanner() {
 }
 
 function stopScanner() {
-  if (codeReader) {
-    try { codeReader.reset(); } catch (_) {}
-    codeReader = null;
-  }
+  if (codeReader) { try { codeReader.reset(); } catch (_) {} codeReader = null; }
   const video = document.getElementById('video');
-  if (video.srcObject) {
-    video.srcObject.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
-  }
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
   document.getElementById('scannerPanel').style.display  = 'none';
   document.getElementById('btnScan').classList.remove('scanning');
   document.getElementById('scanBtnText').textContent     = 'Start Scanning';
@@ -716,70 +736,79 @@ async function switchCamera() {
   }
 }
 
-// ── SCAN RESULT ────────────────────────────────────────
-function onScanResult(result /*, err */) {
+// ── SCAN RESULT ─────────────────────────────────────────────
+function onScanResult(result) {
   if (!result) return;
 
-  // ← TRIM THE SCANNED CODE before matching
-  const code = normalise(result.getText());
+  const code = normalise(result.getText());   // ← TRIM ON SCAN
   if (!code) return;
 
-  // 2-second cooldown — avoids rapid duplicate beeps for the same barcode
+  // 2-second cooldown per identical barcode
   if (scanCooldown && code === lastScanned) return;
   lastScanned  = code;
   scanCooldown = true;
   setTimeout(() => { scanCooldown = false; }, 2000);
 
-  // ── MATCH  (both sides normalised, comparison is exact) ──
-  const accepted = barcodeDB.has(code);
+  const accepted  = barcodeDB.has(code);      // exact match after both sides trimmed
+  const state     = accepted ? 'accept' : 'reject';
+  const now       = new Date();
+  const dateStr   = now.toLocaleDateString('en-GB');          // DD/MM/YYYY
+  const timeStr   = now.toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
 
-  // Stats
+  // ── Record in log ──
   stats.total++;
   if (accepted) stats.accept++; else stats.reject++;
+
+  scanLog.push({
+    seq      : stats.total,
+    barcode  : code,
+    status   : accepted ? 'ACCEPTED' : 'REJECTED',
+    date     : dateStr,
+    time     : timeStr,
+    timestamp: now     // keep raw Date for sorting / export
+  });
+
+  // Enable export once there's at least one scan
+  document.getElementById('btnExport').disabled = false;
+
+  // ── Update stats display ──
   document.getElementById('statTotal').textContent  = stats.total;
   document.getElementById('statAccept').textContent = stats.accept;
   document.getElementById('statReject').textContent = stats.reject;
 
-  // Result panel
+  // ── Result panel ──
   const panel     = document.getElementById('resultPanel');
   const icon      = document.getElementById('resultIcon');
   const label     = document.getElementById('resultLabel');
   const barcodeEl = document.getElementById('resultBarcode');
-  const state     = accepted ? 'accept' : 'reject';
 
-  icon.className      = `result-icon ${state}`;
-  label.className     = `result-label ${state}`;
-  label.textContent   = accepted ? '✓  Accepted' : '✗  Rejected';
+  icon.className        = `result-icon ${state}`;
+  label.className       = `result-label ${state}`;
+  label.textContent     = accepted ? '✓  Accepted' : '✗  Rejected';
   barcodeEl.textContent = code;
-
-  icon.innerHTML = accepted
+  icon.innerHTML        = accepted
     ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
     : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
-  // Pulse ring
   panel.classList.remove('flash-accept', 'flash-reject');
   void panel.offsetWidth;
   panel.classList.add(accepted ? 'flash-accept' : 'flash-reject');
 
-  // Full-screen colour flash
   const overlay = document.getElementById('flashOverlay');
   overlay.style.background = accepted ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)';
   overlay.classList.remove('flash');
   void overlay.offsetWidth;
   overlay.classList.add('flash');
 
-  // Haptic vibration (Android / some iOS)
   if (navigator.vibrate) navigator.vibrate(accepted ? [80] : [120, 60, 120]);
 
-  // History log
-  addHistory(code, state);
+  addHistory(code, state, timeStr);
 }
 
-// ── HISTORY ────────────────────────────────────────────
-function addHistory(code, state) {
+// ── HISTORY UI ──────────────────────────────────────────────
+function addHistory(code, state, time) {
   document.getElementById('historySection').classList.add('visible');
   const list = document.getElementById('historyList');
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   const item = document.createElement('div');
   item.className = `history-item ${state}`;
@@ -788,19 +817,182 @@ function addHistory(code, state) {
     <span class="history-time">${time}</span>
     <span class="history-badge ${state}">${state === 'accept' ? 'OK' : 'FAIL'}</span>
   `;
-  list.insertBefore(item, list.firstChild);  // newest first
-
-  // Cap at 50 entries
+  list.insertBefore(item, list.firstChild);
   while (list.children.length > 50) list.removeChild(list.lastChild);
+
+  document.getElementById('historyCount').textContent =
+    `${scanLog.length} scan${scanLog.length !== 1 ? 's' : ''}`;
 }
 
-// ── HELPERS ────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  EXPORT TO EXCEL
+//  Generates a formatted .xlsx with:
+//    • A header row with column titles
+//    • One row per scan in chronological order (oldest → newest)
+//    • Columns: #, Barcode, Status, Date, Time
+//    • Colour-coded STATUS column (green = ACCEPTED, red = REJECTED)
+//    • Summary block at the bottom
+//    • Column widths set for readability
+// ══════════════════════════════════════════════════════════════
+function exportToExcel() {
+  if (scanLog.length === 0) { showToast('⚠️ No scans to export yet'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Build row data (chronological = scanLog order) ──
+  const headerRow = ['#', 'Barcode', 'Status', 'Date', 'Time'];
+
+  const dataRows = scanLog.map(entry => [
+    entry.seq,
+    entry.barcode,
+    entry.status,
+    entry.date,
+    entry.time
+  ]);
+
+  // Summary rows
+  const blankRow    = ['', '', '', '', ''];
+  const summaryHead = ['SUMMARY', '', '', '', ''];
+  const totalRow    = ['Total Scanned', stats.total,  '', '', ''];
+  const acceptRow   = ['Accepted',      stats.accept, '', '', ''];
+  const rejectRow   = ['Rejected',      stats.reject, '', '', ''];
+
+  const allRows = [headerRow, ...dataRows, blankRow, summaryHead, totalRow, acceptRow, rejectRow];
+
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+  // ── Column widths ──
+  ws['!cols'] = [
+    { wch: 6  },   // #
+    { wch: 28 },   // Barcode
+    { wch: 12 },   // Status
+    { wch: 12 },   // Date
+    { wch: 10 }    // Time
+  ];
+
+  // ── Cell styles via SheetJS cell objects ──
+  // Header row styling
+  const headerStyle = {
+    font:      { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 10 },
+    fill:      { fgColor: { rgb: '1E2433' } },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    border: {
+      bottom: { style: 'medium', color: { rgb: 'F0B429' } }
+    }
+  };
+
+  ['A1','B1','C1','D1','E1'].forEach(ref => {
+    if (!ws[ref]) ws[ref] = { v: '', t: 's' };
+    ws[ref].s = headerStyle;
+  });
+
+  // Data row styles
+  const baseStyle = {
+    font:      { name: 'Arial', sz: 10 },
+    alignment: { vertical: 'center' }
+  };
+
+  const acceptStyle = {
+    font:      { bold: true, color: { rgb: '16A34A' }, name: 'Arial', sz: 10 },
+    fill:      { fgColor: { rgb: 'F0FDF4' } },
+    alignment: { horizontal: 'center', vertical: 'center' }
+  };
+
+  const rejectStyle = {
+    font:      { bold: true, color: { rgb: 'DC2626' }, name: 'Arial', sz: 10 },
+    fill:      { fgColor: { rgb: 'FEF2F2' } },
+    alignment: { horizontal: 'center', vertical: 'center' }
+  };
+
+  const altFill = { fgColor: { rgb: 'F8F9FA' } };
+
+  scanLog.forEach((entry, i) => {
+    const row     = i + 2;          // Excel rows are 1-indexed; row 1 = header
+    const isAlt   = i % 2 === 1;
+    const rowFill = isAlt ? altFill : { fgColor: { rgb: 'FFFFFF' } };
+
+    // # column
+    const seqRef = `A${row}`;
+    if (!ws[seqRef]) ws[seqRef] = { v: entry.seq, t: 'n' };
+    ws[seqRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
+
+    // Barcode column
+    const bcRef = `B${row}`;
+    if (!ws[bcRef]) ws[bcRef] = { v: entry.barcode, t: 's' };
+    ws[bcRef].s = { ...baseStyle, fill: rowFill, font: { name: 'Courier New', sz: 10 } };
+
+    // Status column — green or red
+    const stRef = `C${row}`;
+    if (!ws[stRef]) ws[stRef] = { v: entry.status, t: 's' };
+    ws[stRef].s = entry.status === 'ACCEPTED' ? acceptStyle : rejectStyle;
+
+    // Date column
+    const dtRef = `D${row}`;
+    if (!ws[dtRef]) ws[dtRef] = { v: entry.date, t: 's' };
+    ws[dtRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
+
+    // Time column
+    const tmRef = `E${row}`;
+    if (!ws[tmRef]) ws[tmRef] = { v: entry.time, t: 's' };
+    ws[tmRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
+  });
+
+  // Summary section styling
+  const summaryOffset = dataRows.length + 3;  // +1 header +1 blank +1
+
+  const summaryHeadStyle = {
+    font:      { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 10 },
+    fill:      { fgColor: { rgb: '1E2433' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+
+  const summaryLabelStyle = {
+    font:      { bold: true, name: 'Arial', sz: 10, color: { rgb: '374151' } },
+    fill:      { fgColor: { rgb: 'F3F4F6' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+
+  const summaryNumStyle = (color) => ({
+    font:      { bold: true, name: 'Arial', sz: 11, color: { rgb: color } },
+    fill:      { fgColor: { rgb: 'F3F4F6' } },
+    alignment: { horizontal: 'center', vertical: 'center' }
+  });
+
+  const sHRef = `A${summaryOffset}`;
+  if (ws[sHRef]) ws[sHRef].s = summaryHeadStyle;
+
+  [[`A${summaryOffset+1}`, 'Total Scanned', '374151'],
+   [`A${summaryOffset+2}`, 'Accepted',      '16A34A'],
+   [`A${summaryOffset+3}`, 'Rejected',      'DC2626']].forEach(([ref, , color]) => {
+    if (ws[ref]) ws[ref].s = summaryLabelStyle;
+    const numRef = ref.replace('A', 'B');
+    if (ws[numRef]) ws[numRef].s = summaryNumStyle(color);
+  });
+
+  // Row heights
+  ws['!rows'] = [{ hpt: 22 }];  // header row taller
+
+  // ── Sheet name ──
+  XLSX.utils.book_append_sheet(wb, ws, 'Scan Report');
+
+  // ── File name: warescan_report_YYYYMMDD_HHMMSS.xlsx ──
+  const now   = new Date();
+  const stamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const fname = `warescan_report_${stamp}.xlsx`;
+
+  XLSX.writeFile(wb, fname);
+  showToast(`📥 Exported ${scanLog.length} scans → ${fname}`);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// ── HELPERS ─────────────────────────────────────────────────
 function setResultIdle() {
-  document.getElementById('resultIcon').className  = 'result-icon idle';
-  document.getElementById('resultIcon').innerHTML  =
+  document.getElementById('resultIcon').className   = 'result-icon idle';
+  document.getElementById('resultIcon').innerHTML   =
     `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/></svg>`;
   document.getElementById('resultLabel').className  = 'result-label idle';
-  document.getElementById('resultLabel').textContent = 'Awaiting scan…';
+  document.getElementById('resultLabel').textContent  = 'Awaiting scan…';
   document.getElementById('resultBarcode').textContent = 'Point camera at a barcode';
 }
 
@@ -819,3 +1011,4 @@ function escapeHtml(s) {
 </script>
 </body>
 </html>
+
