@@ -6,7 +6,6 @@
   <title>WareScan — Barcode Verifier</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
@@ -104,7 +103,6 @@
     }
     .pill.loaded .dot { background: var(--green); }
     .pill.loaded { color: var(--text); }
-
     .pill-accent {
       background: rgba(240,180,41,0.08);
       border-color: rgba(240,180,41,0.2);
@@ -122,7 +120,6 @@
       gap: 12px;
     }
 
-    /* ── BUTTONS ── */
     .btn {
       width: 100%;
       padding: 17px 24px;
@@ -168,7 +165,6 @@
     .btn-scan:disabled { background: var(--surface2); color: var(--muted); border-color: var(--border); cursor: not-allowed; }
     .btn-scan.scanning { background: var(--accent2); border-color: var(--accent2); color: #fff; }
 
-    /* Export button */
     .btn-export {
       background: transparent;
       color: var(--blue);
@@ -257,6 +253,30 @@
       50%       { top: 90%; }
     }
 
+    /* camera initialising overlay */
+    #cameraLoading {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    #cameraLoading.visible { display: flex; }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* ── RESULT PANEL ── */
     .result-panel {
       padding: 20px;
@@ -342,7 +362,6 @@
       margin-top: 5px;
     }
 
-    /* ── CAMERA SELECT ── */
     #cameraSelect {
       width: 100%;
       background: var(--surface2);
@@ -373,7 +392,6 @@
       text-transform: uppercase;
       color: var(--muted);
     }
-
     .history-list {
       display: flex;
       flex-direction: column;
@@ -397,45 +415,31 @@
     .history-item.reject { border-left-color: var(--red); }
     .history-code {
       font-family: 'Barlow Condensed', sans-serif;
-      flex: 1;
-      letter-spacing: 0.03em;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      flex: 1; letter-spacing: 0.03em;
+      min-width: 0; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
     }
     .history-time { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
     .history-badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 99px;
-      white-space: nowrap;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 99px; white-space: nowrap;
     }
     .history-badge.accept { background: rgba(34,197,94,0.12); color: var(--green); }
     .history-badge.reject { background: rgba(239,68,68,0.12); color: var(--red); }
 
     /* ── FLASH OVERLAY ── */
     #flashOverlay {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      z-index: 50;
+      position: fixed; inset: 0;
+      pointer-events: none; opacity: 0; z-index: 50;
     }
-    @keyframes screenFlash {
-      0%   { opacity: 1; }
-      100% { opacity: 0; }
-    }
+    @keyframes screenFlash { 0% { opacity:1; } 100% { opacity:0; } }
     #flashOverlay.flash { animation: screenFlash 0.4s ease-out forwards; }
 
     /* ── TOAST ── */
     #toast {
       position: fixed;
-      bottom: 28px;
-      left: 50%;
+      bottom: 28px; left: 50%;
       transform: translateX(-50%) translateY(70px);
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -444,8 +448,7 @@
       font-size: 0.82rem;
       white-space: nowrap;
       transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
-      z-index: 999;
-      pointer-events: none;
+      z-index: 999; pointer-events: none;
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
@@ -456,6 +459,21 @@
       padding: 0 8px;
       line-height: 1.6;
     }
+
+    /* ── STORAGE NOTE ── */
+    .storage-note {
+      background: rgba(34,197,94,0.06);
+      border: 1px solid rgba(34,197,94,0.18);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      color: #86efac;
+      line-height: 1.5;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .storage-note svg { flex-shrink: 0; margin-top: 1px; }
   </style>
 </head>
 <body>
@@ -479,6 +497,12 @@
 
 <main>
   <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+
+  <!-- Persistent storage notice -->
+  <div class="storage-note" id="storageNote" style="display:none;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <span>Database is saved on this device. No need to re-upload after refresh — data persists until you click <strong>Clear Data</strong>.</span>
+  </div>
 
   <!-- 1. UPLOAD DATA -->
   <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">
@@ -515,7 +539,6 @@
     <span id="scanBtnText">Start Scanning</span>
   </button>
 
-  <!-- Camera picker -->
   <select id="cameraSelect" onchange="switchCamera()"></select>
 
   <!-- SCANNER VIEW -->
@@ -523,10 +546,12 @@
     <div class="video-wrap">
       <video id="video" playsinline autoplay muted></video>
       <div class="scan-overlay">
-        <div class="scan-frame">
-          <span></span>
-          <div class="scan-line"></div>
-        </div>
+        <div class="scan-frame"><span></span><div class="scan-line"></div></div>
+      </div>
+      <!-- Loading spinner shown while camera initialises -->
+      <div id="cameraLoading" class="visible">
+        <div class="spinner"></div>
+        <span>Starting camera…</span>
       </div>
     </div>
     <div class="result-panel" id="resultPanel">
@@ -545,21 +570,12 @@
 
   <!-- STATS -->
   <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-num total"  id="statTotal">0</div>
-      <div class="stat-lbl">Scanned</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num accept" id="statAccept">0</div>
-      <div class="stat-lbl">Accepted</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num reject" id="statReject">0</div>
-      <div class="stat-lbl">Rejected</div>
-    </div>
+    <div class="stat-card"><div class="stat-num total"  id="statTotal">0</div><div class="stat-lbl">Scanned</div></div>
+    <div class="stat-card"><div class="stat-num accept" id="statAccept">0</div><div class="stat-lbl">Accepted</div></div>
+    <div class="stat-card"><div class="stat-num reject" id="statReject">0</div><div class="stat-lbl">Rejected</div></div>
   </div>
 
-  <!-- EXPORT BUTTON -->
+  <!-- EXPORT -->
   <button class="btn btn-export" id="btnExport" onclick="exportToExcel()" disabled>
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -569,35 +585,38 @@
     Export Scan Report (.xlsx)
   </button>
 
-  <!-- SCAN HISTORY -->
+  <!-- HISTORY -->
   <div id="historySection">
     <div class="section-header">
       <div class="history-header">Scan History</div>
-      <div style="font-size:0.72rem; color:var(--muted);" id="historyCount"></div>
+      <div style="font-size:0.72rem;color:var(--muted);" id="historyCount"></div>
     </div>
     <div class="history-list" id="historyList"></div>
   </div>
 
   <p class="info-note">
     Upload an Excel (.xlsx / .xls) or CSV file with barcodes in any column.<br>
-    Leading &amp; trailing spaces are automatically ignored at every step.<br>
+    Data is saved to this device automatically — no re-upload needed after refresh.<br>
     Use <strong style="color:var(--text)">Export Scan Report</strong> to download a timestamped .xlsx log.
   </p>
 </main>
 
 <div id="toast"></div>
 
+<!-- Load ZXing AFTER page is ready -->
 <script>
 // ═══════════════════════════════════════════════════════════
-//  NORMALISE — strips all whitespace variants from both ends.
-//  Handles: regular spaces/tabs/newlines (\s), non-breaking
-//  space (\u00A0), zero-width space (\u200B), BOM (\uFEFF).
-//  Internal spaces (e.g. "ABC 123") are preserved.
+//  NORMALISE — trim all whitespace variants from both ends.
+//  Covers: spaces, tabs, newlines (\s), non-breaking space
+//  (\u00A0), zero-width space (\u200B), BOM (\uFEFF).
 // ═══════════════════════════════════════════════════════════
 function normalise(raw) {
   if (raw === null || raw === undefined) return '';
   return String(raw).replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
 }
+
+// ── CONSTANTS ──────────────────────────────────────────────
+const LS_KEY = 'warescan_db_v1';   // localStorage key for the barcode set
 
 // ── STATE ──────────────────────────────────────────────────
 let barcodeDB        = new Set();
@@ -607,12 +626,67 @@ let selectedDeviceId = null;
 let lastScanned      = null;
 let scanCooldown     = false;
 let stats            = { total: 0, accept: 0, reject: 0 };
+let scanLog          = [];
+let zxingReady       = false;      // true once ZXing script has loaded
 
-// scanLog holds every scan in chronological order for export
-// Each entry: { seq, barcode, status, date, time, timestamp }
-let scanLog = [];
+// ═══════════════════════════════════════════════════════════
+//  LOAD ZXING DYNAMICALLY — we load it ourselves so we can
+//  know exactly when it is ready before trying to use it.
+// ═══════════════════════════════════════════════════════════
+function loadZXing() {
+  return new Promise((resolve, reject) => {
+    if (window.ZXing) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+    s.onload  = () => { zxingReady = true; resolve(); };
+    s.onerror = () => reject(new Error('Failed to load ZXing library'));
+    document.head.appendChild(s);
+  });
+}
 
-// ── FILE UPLOAD ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  LOCALSTORAGE PERSISTENCE
+//  We store the barcode array as a JSON string under LS_KEY.
+//  On every page load we restore it so no re-upload is needed.
+// ═══════════════════════════════════════════════════════════
+function saveDB() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify([...barcodeDB]));
+  } catch (e) {
+    // localStorage full or unavailable — fail silently
+    console.warn('Could not save to localStorage:', e);
+  }
+}
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr) || arr.length === 0) return false;
+    barcodeDB = new Set(arr);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearDB() {
+  barcodeDB.clear();
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+}
+
+// ── ON PAGE LOAD — restore saved DB ────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const restored = loadDB();
+  if (restored) {
+    setDBLoaded(barcodeDB.size, /*isRestored=*/true);
+  }
+  // Begin loading ZXing in the background so it's ready when user taps Scan
+  loadZXing().catch(() => {});
+});
+
+// ── FILE UPLOAD ─────────────────────────────────────────────
 document.getElementById('fileInput').addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -630,7 +704,7 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
 
       rows.forEach(row => {
         row.forEach(cell => {
-          const clean = normalise(cell);   // ← TRIM ON IMPORT
+          const clean = normalise(cell);     // ← TRIM ON IMPORT
           if (clean === '') { skipped++; return; }
           barcodeDB.add(clean);
         });
@@ -638,14 +712,11 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
 
       if (barcodeDB.size === 0) { showToast('⚠️ No valid barcodes found in file'); return; }
 
-      document.getElementById('dbStatus').classList.add('loaded');
-      document.getElementById('dbStatusText').textContent =
-        `${barcodeDB.size.toLocaleString()} barcodes loaded`;
-      document.getElementById('btnClear').disabled = false;
-      document.getElementById('btnScan').disabled  = false;
+      saveDB();   // ← PERSIST TO LOCALSTORAGE
+      setDBLoaded(barcodeDB.size, /*isRestored=*/false);
 
       const note = skipped > 0 ? ` (${skipped} blank cells skipped)` : '';
-      showToast(`✅ ${barcodeDB.size} barcodes loaded from "${wb.SheetNames[0]}"${note}`);
+      showToast(`✅ ${barcodeDB.size} barcodes saved from "${wb.SheetNames[0]}"${note}`);
     } catch (err) {
       console.error(err);
       showToast('❌ Failed to read file — use .xlsx, .xls or .csv');
@@ -655,44 +726,103 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
   this.value = '';
 });
 
-// ── CLEAR DATA ─────────────────────────────────────────────
-function clearData() {
-  if (!confirm('Clear all loaded barcode data and scan history?')) return;
+function setDBLoaded(count, isRestored) {
+  document.getElementById('dbStatus').classList.add('loaded');
+  document.getElementById('dbStatusText').textContent = `${count.toLocaleString()} barcodes loaded`;
+  document.getElementById('btnClear').disabled = false;
+  document.getElementById('btnScan').disabled  = false;
+  document.getElementById('storageNote').style.display = 'flex';
+  if (isRestored) {
+    showToast(`♻️ ${count.toLocaleString()} barcodes restored from saved data`);
+  }
+}
 
-  barcodeDB.clear();
+// ── CLEAR DATA ──────────────────────────────────────────────
+function clearData() {
+  if (!confirm('This will permanently delete the saved barcode database and all scan history. Continue?')) return;
+
+  clearDB();    // ← WIPE LOCALSTORAGE
   document.getElementById('dbStatus').classList.remove('loaded');
-  document.getElementById('dbStatusText').textContent = 'No database loaded';
+  document.getElementById('dbStatusText').textContent   = 'No database loaded';
   document.getElementById('btnClear').disabled  = true;
   document.getElementById('btnScan').disabled   = true;
   document.getElementById('btnExport').disabled = true;
+  document.getElementById('storageNote').style.display  = 'none';
 
   if (isScanning) stopScanner();
 
   stats   = { total: 0, accept: 0, reject: 0 };
   scanLog = [];
-  document.getElementById('statTotal').textContent  = '0';
-  document.getElementById('statAccept').textContent = '0';
-  document.getElementById('statReject').textContent = '0';
-  document.getElementById('historyList').innerHTML  = '';
+  document.getElementById('statTotal').textContent   = '0';
+  document.getElementById('statAccept').textContent  = '0';
+  document.getElementById('statReject').textContent  = '0';
+  document.getElementById('historyList').innerHTML   = '';
   document.getElementById('historyCount').textContent = '';
   document.getElementById('historySection').classList.remove('visible');
 
   setResultIdle();
-  showToast('🗑️ Data cleared');
+  showToast('🗑️ Database cleared from this device');
 }
 
-// ── SCANNER TOGGLE ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  SCANNER
+//  Key fixes vs previous version:
+//  1. Wait for ZXing to finish loading before calling it
+//  2. Request camera permission explicitly via getUserMedia
+//     first — this ensures the browser shows the allow/deny
+//     prompt properly on mobile (iOS Safari, Android Chrome)
+//  3. Use constraints that prefer the rear camera
+//  4. Show a loading spinner while camera initialises
+// ═══════════════════════════════════════════════════════════
 function toggleScanner() { isScanning ? stopScanner() : startScanner(); }
 
 async function startScanner() {
+  // Show panel and spinner immediately so user gets feedback
   document.getElementById('scannerPanel').style.display = 'flex';
+  document.getElementById('cameraLoading').classList.add('visible');
   document.getElementById('btnScan').classList.add('scanning');
-  document.getElementById('scanBtnText').textContent    = 'Stop Scanning';
+  document.getElementById('scanBtnText').textContent = 'Stop Scanning';
   isScanning = true;
   setResultIdle();
 
   try {
-    codeReader    = new ZXing.BrowserMultiFormatReader();
+    // Step 1 — ensure ZXing is loaded
+    if (!zxingReady) {
+      showToast('⏳ Loading scanner library…');
+      await loadZXing();
+    }
+
+    // Step 2 — explicitly request camera permission BEFORE ZXing does anything.
+    //           This is the most reliable way to trigger the browser's permission
+    //           prompt on both iOS Safari and Android Chrome.
+    //           We prefer the rear (environment) camera for warehouse use.
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+    } catch (permErr) {
+      // If environment camera fails (e.g. desktop), try any camera
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+
+    // Step 3 — attach stream to video element directly so we can confirm it works
+    const videoEl = document.getElementById('video');
+    videoEl.srcObject = stream;
+    await videoEl.play().catch(() => {});
+
+    // Step 4 — hide loading spinner once video is playing
+    videoEl.addEventListener('playing', () => {
+      document.getElementById('cameraLoading').classList.remove('visible');
+    }, { once: true });
+
+    // Step 5 — now hand off to ZXing for barcode decoding.
+    //           We pass the existing video element (already has stream) so
+    //           ZXing does NOT need to call getUserMedia again.
+    codeReader = new ZXing.BrowserMultiFormatReader();
+
+    // Populate camera selector for multi-camera devices
     const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
     const sel     = document.getElementById('cameraSelect');
 
@@ -701,18 +831,33 @@ async function startScanner() {
       sel.innerHTML = devices.map((d, i) =>
         `<option value="${d.deviceId}">${d.label || 'Camera ' + (i + 1)}</option>`
       ).join('');
-      const rear       = devices.find(d => /back|rear|environment/i.test(d.label));
-      selectedDeviceId = rear ? rear.deviceId : devices[0].deviceId;
-      sel.value        = selectedDeviceId;
+      // Match selected device to the stream already active
+      const activeTrack = stream.getVideoTracks()[0];
+      const activeLabel = activeTrack ? activeTrack.label : '';
+      const matched     = devices.find(d => d.label === activeLabel);
+      selectedDeviceId  = matched ? matched.deviceId : devices[0].deviceId;
+      sel.value         = selectedDeviceId;
     } else {
       sel.style.display = 'none';
       selectedDeviceId  = devices[0]?.deviceId ?? null;
     }
 
-    await codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', onScanResult);
+    // Step 6 — start ZXing decode loop on the already-playing video element
+    codeReader.decodeFromVideoElement(videoEl, onScanResult);
+
   } catch (err) {
-    console.error(err);
-    showToast('❌ Camera access denied or not available');
+    console.error('Camera error:', err);
+    document.getElementById('cameraLoading').classList.remove('visible');
+
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showToast('❌ Camera permission denied — please allow camera access in your browser settings');
+    } else if (err.name === 'NotFoundError') {
+      showToast('❌ No camera found on this device');
+    } else if (err.name === 'NotReadableError') {
+      showToast('❌ Camera is in use by another app');
+    } else {
+      showToast('❌ Could not start camera: ' + (err.message || err.name));
+    }
     stopScanner();
   }
 }
@@ -720,19 +865,47 @@ async function startScanner() {
 function stopScanner() {
   if (codeReader) { try { codeReader.reset(); } catch (_) {} codeReader = null; }
   const video = document.getElementById('video');
-  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-  document.getElementById('scannerPanel').style.display  = 'none';
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  document.getElementById('scannerPanel').style.display     = 'none';
+  document.getElementById('cameraLoading').classList.add('visible'); // reset for next open
   document.getElementById('btnScan').classList.remove('scanning');
-  document.getElementById('scanBtnText').textContent     = 'Start Scanning';
-  document.getElementById('cameraSelect').style.display  = 'none';
+  document.getElementById('scanBtnText').textContent        = 'Start Scanning';
+  document.getElementById('cameraSelect').style.display     = 'none';
   isScanning = false;
 }
 
 async function switchCamera() {
   selectedDeviceId = document.getElementById('cameraSelect').value;
-  if (codeReader) {
-    try { codeReader.reset(); } catch (_) {}
-    await codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', onScanResult);
+  const videoEl = document.getElementById('video');
+
+  // Stop existing tracks
+  if (videoEl.srcObject) {
+    videoEl.srcObject.getTracks().forEach(t => t.stop());
+    videoEl.srcObject = null;
+  }
+  if (codeReader) { try { codeReader.reset(); } catch (_) {} }
+
+  document.getElementById('cameraLoading').classList.add('visible');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: selectedDeviceId } },
+      audio: false
+    });
+    videoEl.srcObject = stream;
+    await videoEl.play().catch(() => {});
+    videoEl.addEventListener('playing', () => {
+      document.getElementById('cameraLoading').classList.remove('visible');
+    }, { once: true });
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader.decodeFromVideoElement(videoEl, onScanResult);
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Could not switch camera');
+    document.getElementById('cameraLoading').classList.remove('visible');
   }
 }
 
@@ -740,7 +913,7 @@ async function switchCamera() {
 function onScanResult(result) {
   if (!result) return;
 
-  const code = normalise(result.getText());   // ← TRIM ON SCAN
+  const code = normalise(result.getText());    // ← TRIM ON SCAN
   if (!code) return;
 
   // 2-second cooldown per identical barcode
@@ -749,34 +922,23 @@ function onScanResult(result) {
   scanCooldown = true;
   setTimeout(() => { scanCooldown = false; }, 2000);
 
-  const accepted  = barcodeDB.has(code);      // exact match after both sides trimmed
+  const accepted  = barcodeDB.has(code);       // exact match after both sides trimmed
   const state     = accepted ? 'accept' : 'reject';
   const now       = new Date();
-  const dateStr   = now.toLocaleDateString('en-GB');          // DD/MM/YYYY
-  const timeStr   = now.toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
+  const dateStr   = now.toLocaleDateString('en-GB');
+  const timeStr   = now.toLocaleTimeString('en-GB', { hour12: false });
 
-  // ── Record in log ──
   stats.total++;
   if (accepted) stats.accept++; else stats.reject++;
 
-  scanLog.push({
-    seq      : stats.total,
-    barcode  : code,
-    status   : accepted ? 'ACCEPTED' : 'REJECTED',
-    date     : dateStr,
-    time     : timeStr,
-    timestamp: now     // keep raw Date for sorting / export
-  });
+  scanLog.push({ seq: stats.total, barcode: code, status: accepted ? 'ACCEPTED' : 'REJECTED', date: dateStr, time: timeStr, timestamp: now });
 
-  // Enable export once there's at least one scan
   document.getElementById('btnExport').disabled = false;
-
-  // ── Update stats display ──
   document.getElementById('statTotal').textContent  = stats.total;
   document.getElementById('statAccept').textContent = stats.accept;
   document.getElementById('statReject').textContent = stats.reject;
 
-  // ── Result panel ──
+  // Result panel
   const panel     = document.getElementById('resultPanel');
   const icon      = document.getElementById('resultIcon');
   const label     = document.getElementById('resultLabel');
@@ -790,7 +952,7 @@ function onScanResult(result) {
     ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
     : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
-  panel.classList.remove('flash-accept', 'flash-reject');
+  panel.classList.remove('flash-accept','flash-reject');
   void panel.offsetWidth;
   panel.classList.add(accepted ? 'flash-accept' : 'flash-reject');
 
@@ -809,190 +971,81 @@ function onScanResult(result) {
 function addHistory(code, state, time) {
   document.getElementById('historySection').classList.add('visible');
   const list = document.getElementById('historyList');
-
   const item = document.createElement('div');
   item.className = `history-item ${state}`;
   item.innerHTML = `
     <span class="history-code">${escapeHtml(code)}</span>
     <span class="history-time">${time}</span>
-    <span class="history-badge ${state}">${state === 'accept' ? 'OK' : 'FAIL'}</span>
-  `;
+    <span class="history-badge ${state}">${state === 'accept' ? 'OK' : 'FAIL'}</span>`;
   list.insertBefore(item, list.firstChild);
   while (list.children.length > 50) list.removeChild(list.lastChild);
-
   document.getElementById('historyCount').textContent =
     `${scanLog.length} scan${scanLog.length !== 1 ? 's' : ''}`;
 }
 
-// ══════════════════════════════════════════════════════════════
-//  EXPORT TO EXCEL
-//  Generates a formatted .xlsx with:
-//    • A header row with column titles
-//    • One row per scan in chronological order (oldest → newest)
-//    • Columns: #, Barcode, Status, Date, Time
-//    • Colour-coded STATUS column (green = ACCEPTED, red = REJECTED)
-//    • Summary block at the bottom
-//    • Column widths set for readability
-// ══════════════════════════════════════════════════════════════
+// ── EXPORT TO EXCEL ─────────────────────────────────────────
 function exportToExcel() {
   if (scanLog.length === 0) { showToast('⚠️ No scans to export yet'); return; }
 
-  const wb = XLSX.utils.book_new();
-
-  // ── Build row data (chronological = scanLog order) ──
-  const headerRow = ['#', 'Barcode', 'Status', 'Date', 'Time'];
-
-  const dataRows = scanLog.map(entry => [
-    entry.seq,
-    entry.barcode,
-    entry.status,
-    entry.date,
-    entry.time
-  ]);
-
-  // Summary rows
-  const blankRow    = ['', '', '', '', ''];
-  const summaryHead = ['SUMMARY', '', '', '', ''];
-  const totalRow    = ['Total Scanned', stats.total,  '', '', ''];
-  const acceptRow   = ['Accepted',      stats.accept, '', '', ''];
-  const rejectRow   = ['Rejected',      stats.reject, '', '', ''];
-
-  const allRows = [headerRow, ...dataRows, blankRow, summaryHead, totalRow, acceptRow, rejectRow];
+  const wb  = XLSX.utils.book_new();
+  const headerRow  = ['#', 'Barcode', 'Status', 'Date', 'Time'];
+  const dataRows   = scanLog.map(e => [e.seq, e.barcode, e.status, e.date, e.time]);
+  const blankRow   = ['','','','',''];
+  const allRows    = [headerRow, ...dataRows, blankRow,
+    ['SUMMARY','','','',''],
+    ['Total Scanned', stats.total,'','',''],
+    ['Accepted', stats.accept,'','',''],
+    ['Rejected', stats.reject,'','','']];
 
   const ws = XLSX.utils.aoa_to_sheet(allRows);
+  ws['!cols'] = [{ wch:6 },{ wch:28 },{ wch:12 },{ wch:12 },{ wch:10 }];
 
-  // ── Column widths ──
-  ws['!cols'] = [
-    { wch: 6  },   // #
-    { wch: 28 },   // Barcode
-    { wch: 12 },   // Status
-    { wch: 12 },   // Date
-    { wch: 10 }    // Time
-  ];
+  const hStyle = { font:{ bold:true, color:{rgb:'FFFFFF'}, name:'Arial', sz:10 }, fill:{ fgColor:{rgb:'1E2433'} }, alignment:{ horizontal:'center' }, border:{ bottom:{ style:'medium', color:{rgb:'F0B429'} } } };
+  ['A1','B1','C1','D1','E1'].forEach(r => { if (!ws[r]) ws[r]={v:'',t:'s'}; ws[r].s = hStyle; });
 
-  // ── Cell styles via SheetJS cell objects ──
-  // Header row styling
-  const headerStyle = {
-    font:      { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 10 },
-    fill:      { fgColor: { rgb: '1E2433' } },
-    alignment: { horizontal: 'center', vertical: 'center' },
-    border: {
-      bottom: { style: 'medium', color: { rgb: 'F0B429' } }
-    }
-  };
-
-  ['A1','B1','C1','D1','E1'].forEach(ref => {
-    if (!ws[ref]) ws[ref] = { v: '', t: 's' };
-    ws[ref].s = headerStyle;
-  });
-
-  // Data row styles
-  const baseStyle = {
-    font:      { name: 'Arial', sz: 10 },
-    alignment: { vertical: 'center' }
-  };
-
-  const acceptStyle = {
-    font:      { bold: true, color: { rgb: '16A34A' }, name: 'Arial', sz: 10 },
-    fill:      { fgColor: { rgb: 'F0FDF4' } },
-    alignment: { horizontal: 'center', vertical: 'center' }
-  };
-
-  const rejectStyle = {
-    font:      { bold: true, color: { rgb: 'DC2626' }, name: 'Arial', sz: 10 },
-    fill:      { fgColor: { rgb: 'FEF2F2' } },
-    alignment: { horizontal: 'center', vertical: 'center' }
-  };
-
-  const altFill = { fgColor: { rgb: 'F8F9FA' } };
+  const base = { font:{ name:'Arial', sz:10 }, alignment:{ vertical:'center' } };
+  const aStyle = { font:{ bold:true, color:{rgb:'16A34A'}, name:'Arial', sz:10 }, fill:{ fgColor:{rgb:'F0FDF4'} }, alignment:{ horizontal:'center', vertical:'center' } };
+  const rStyle = { font:{ bold:true, color:{rgb:'DC2626'}, name:'Arial', sz:10 }, fill:{ fgColor:{rgb:'FEF2F2'} }, alignment:{ horizontal:'center', vertical:'center' } };
 
   scanLog.forEach((entry, i) => {
-    const row     = i + 2;          // Excel rows are 1-indexed; row 1 = header
-    const isAlt   = i % 2 === 1;
-    const rowFill = isAlt ? altFill : { fgColor: { rgb: 'FFFFFF' } };
-
-    // # column
-    const seqRef = `A${row}`;
-    if (!ws[seqRef]) ws[seqRef] = { v: entry.seq, t: 'n' };
-    ws[seqRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
-
-    // Barcode column
-    const bcRef = `B${row}`;
-    if (!ws[bcRef]) ws[bcRef] = { v: entry.barcode, t: 's' };
-    ws[bcRef].s = { ...baseStyle, fill: rowFill, font: { name: 'Courier New', sz: 10 } };
-
-    // Status column — green or red
-    const stRef = `C${row}`;
-    if (!ws[stRef]) ws[stRef] = { v: entry.status, t: 's' };
-    ws[stRef].s = entry.status === 'ACCEPTED' ? acceptStyle : rejectStyle;
-
-    // Date column
-    const dtRef = `D${row}`;
-    if (!ws[dtRef]) ws[dtRef] = { v: entry.date, t: 's' };
-    ws[dtRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
-
-    // Time column
-    const tmRef = `E${row}`;
-    if (!ws[tmRef]) ws[tmRef] = { v: entry.time, t: 's' };
-    ws[tmRef].s = { ...baseStyle, fill: rowFill, alignment: { horizontal: 'center', vertical: 'center' } };
+    const row  = i + 2;
+    const fill = { fgColor:{ rgb: i%2===1 ? 'F8F9FA' : 'FFFFFF' } };
+    const ctr  = { horizontal:'center', vertical:'center' };
+    const ref  = (col) => `${col}${row}`;
+    if (ws[ref('A')]) ws[ref('A')].s = { ...base, fill, alignment: ctr };
+    if (ws[ref('B')]) ws[ref('B')].s = { font:{ name:'Courier New', sz:10 }, fill, alignment:{ vertical:'center' } };
+    if (ws[ref('C')]) ws[ref('C')].s = entry.status === 'ACCEPTED' ? aStyle : rStyle;
+    if (ws[ref('D')]) ws[ref('D')].s = { ...base, fill, alignment: ctr };
+    if (ws[ref('E')]) ws[ref('E')].s = { ...base, fill, alignment: ctr };
   });
 
-  // Summary section styling
-  const summaryOffset = dataRows.length + 3;  // +1 header +1 blank +1
+  const so = dataRows.length + 3;
+  const sHead = { font:{ bold:true, color:{rgb:'FFFFFF'}, name:'Arial', sz:10 }, fill:{ fgColor:{rgb:'1E2433'} } };
+  const sLbl  = { font:{ bold:true, name:'Arial', sz:10, color:{rgb:'374151'} }, fill:{ fgColor:{rgb:'F3F4F6'} } };
+  const sNum  = (c) => ({ font:{ bold:true, name:'Arial', sz:11, color:{rgb:c} }, fill:{ fgColor:{rgb:'F3F4F6'} }, alignment:{ horizontal:'center' } });
+  if (ws[`A${so}`])   ws[`A${so}`].s   = sHead;
+  if (ws[`A${so+1}`]) ws[`A${so+1}`].s = sLbl;
+  if (ws[`B${so+1}`]) ws[`B${so+1}`].s = sNum('374151');
+  if (ws[`A${so+2}`]) ws[`A${so+2}`].s = sLbl;
+  if (ws[`B${so+2}`]) ws[`B${so+2}`].s = sNum('16A34A');
+  if (ws[`A${so+3}`]) ws[`A${so+3}`].s = sLbl;
+  if (ws[`B${so+3}`]) ws[`B${so+3}`].s = sNum('DC2626');
 
-  const summaryHeadStyle = {
-    font:      { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 10 },
-    fill:      { fgColor: { rgb: '1E2433' } },
-    alignment: { horizontal: 'left', vertical: 'center' }
-  };
-
-  const summaryLabelStyle = {
-    font:      { bold: true, name: 'Arial', sz: 10, color: { rgb: '374151' } },
-    fill:      { fgColor: { rgb: 'F3F4F6' } },
-    alignment: { horizontal: 'left', vertical: 'center' }
-  };
-
-  const summaryNumStyle = (color) => ({
-    font:      { bold: true, name: 'Arial', sz: 11, color: { rgb: color } },
-    fill:      { fgColor: { rgb: 'F3F4F6' } },
-    alignment: { horizontal: 'center', vertical: 'center' }
-  });
-
-  const sHRef = `A${summaryOffset}`;
-  if (ws[sHRef]) ws[sHRef].s = summaryHeadStyle;
-
-  [[`A${summaryOffset+1}`, 'Total Scanned', '374151'],
-   [`A${summaryOffset+2}`, 'Accepted',      '16A34A'],
-   [`A${summaryOffset+3}`, 'Rejected',      'DC2626']].forEach(([ref, , color]) => {
-    if (ws[ref]) ws[ref].s = summaryLabelStyle;
-    const numRef = ref.replace('A', 'B');
-    if (ws[numRef]) ws[numRef].s = summaryNumStyle(color);
-  });
-
-  // Row heights
-  ws['!rows'] = [{ hpt: 22 }];  // header row taller
-
-  // ── Sheet name ──
   XLSX.utils.book_append_sheet(wb, ws, 'Scan Report');
 
-  // ── File name: warescan_report_YYYYMMDD_HHMMSS.xlsx ──
   const now   = new Date();
   const stamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  const fname = `warescan_report_${stamp}.xlsx`;
-
-  XLSX.writeFile(wb, fname);
-  showToast(`📥 Exported ${scanLog.length} scans → ${fname}`);
+  XLSX.writeFile(wb, `warescan_report_${stamp}.xlsx`);
+  showToast(`📥 Exported ${scanLog.length} scans`);
 }
 
-function pad(n) { return String(n).padStart(2, '0'); }
+function pad(n) { return String(n).padStart(2,'0'); }
 
-// ── HELPERS ─────────────────────────────────────────────────
 function setResultIdle() {
-  document.getElementById('resultIcon').className   = 'result-icon idle';
-  document.getElementById('resultIcon').innerHTML   =
-    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/></svg>`;
-  document.getElementById('resultLabel').className  = 'result-label idle';
-  document.getElementById('resultLabel').textContent  = 'Awaiting scan…';
+  document.getElementById('resultIcon').className    = 'result-icon idle';
+  document.getElementById('resultIcon').innerHTML    = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="4" x2="6" y2="20"/></svg>`;
+  document.getElementById('resultLabel').className   = 'result-label idle';
+  document.getElementById('resultLabel').textContent   = 'Awaiting scan…';
   document.getElementById('resultBarcode').textContent = 'Point camera at a barcode';
 }
 
